@@ -7,7 +7,15 @@ A `src` é a pasta que tem o código do jogo e os headers (pastas que acabam em 
 
 O `README.md` é isto que estão a ler agora, podem cagar.
 
-### Como correr o jogo:
+
+### Como atualizar o código no repositório
+Caso a opção Add File > Upload Files não vos apareça façam o que diz no vídeo:
+
+https://www.youtube.com/watch?v=LxkXT9WD7yk
+
+Os indianos nunca falham
+
+### Como correr o jogo (S:
 - 1º: Transferir os ficheiros
 - 2º: Pôr a pasta onde quiserem
 - 3º: No terminal usar o comando `cd` (change directory) para chegar ao local onde puseram a pasta
