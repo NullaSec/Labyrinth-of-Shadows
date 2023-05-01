@@ -15,7 +15,7 @@ https://www.youtube.com/watch?v=LxkXT9WD7yk
 
 Os indianos nunca falham
 
-### Como correr o jogo (S:
+### Como correr o jogo (SÓ LINUX):
 - 1º: Transferir os ficheiros
 - 2º: Pôr a pasta onde quiserem
 - 3º: No terminal usar o comando `cd` (change directory) para chegar ao local onde puseram a pasta
