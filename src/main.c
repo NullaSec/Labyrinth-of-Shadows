@@ -1,77 +1,166 @@
-#include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <ncurses.h>
 
-#include "mapa.h" // Inclui a barreira() do mapa.c
+#define MAP_WIDTH 51
+#define MAP_HEIGHT 100
+#define MAX_ROOMS 100
+#define ROOM_MIN_SIZE 3
+#define ROOM_MAX_SIZE 6
 
-typedef struct posi {int posX, posY;} Posicao;
+typedef struct {
+    int x;
+    int y;
+} Player;
 
-void Movimento(Posicao *pos, int newX, int newY)
-{
-    pos -> posX += newX;
-    pos -> posY += newY;
-}
+typedef struct {
+    int x;
+    int y;
+    int width;
+    int height;
+} Room;
 
-void AlterarMov(Posicao *pos) // Teclas
-{
-    int tecla = getch();
+char map[MAP_HEIGHT][MAP_WIDTH];
+Player player;
+Room rooms[MAX_ROOMS];
+int numRooms = 0;
 
-    switch(tecla)
-    {
-        case '4':
-        case KEY_LEFT: Movimento(pos, -1, 0); break;
-        case '6':
-        case KEY_RIGHT: Movimento(pos, +1, 0); break;
-        case '8':
-        case KEY_UP: Movimento(pos, 0, -1); break;
-        case '2':
-        case KEY_DOWN: Movimento(pos, 0, +1); break;
-        case KEY_A1: 
-        case '7': Movimento(pos, -1, -1); break;
-        case KEY_A3: 
-        case '9': Movimento(pos, +1, -1); break;
-        case KEY_C1: 
-        case '1': Movimento(pos, -1, +1); break;
-        case KEY_C3: 
-        case '3': Movimento(pos, +1, +1); break;
-
-        case 'q': endwin(); exit(0); break;
-        default: break;
+void initializeMap() {
+    for (int y = 0; y < MAP_HEIGHT; y++) {
+        for (int x = 0; x < MAP_WIDTH; x++) {
+            map[y][x] = '#';
+        }
     }
 }
 
-int main()
-{
+void printMap() {
+    for (int y = 0; y < MAP_HEIGHT; y++) {
+        for (int x = 0; x < MAP_WIDTH; x++) {
+            if (x == player.x && y == player.y) {
+                printw("@ ");
+            } else {
+                printw("%c ", map[y][x]);
+            }
+        }
+        printw("\n");
+    }
+    refresh();
+}
+
+void createRoom(Room room) {
+    for (int y = room.y; y < room.y + room.height; y++) {
+        for (int x = room.x; x < room.x + room.width; x++) {
+            map[y][x] = '.';
+        }
+    }
+}
+
+void createHorizontalTunnel(int x1, int x2, int y) {
+    for (int x = x1; x <= x2; x++) {
+        map[y][x] = '.';
+    }
+}
+
+void createVerticalTunnel(int y1, int y2, int x) {
+    for (int y = y1; y <= y2; y++) {
+        map[y][x] = '.';
+    }
+}
+
+void generateMap() {
+    initializeMap();
+
+    srand(time(NULL));
+
+    for (int i = 0; i < MAX_ROOMS; i++) {
+        int roomWidth = rand() % (ROOM_MAX_SIZE - ROOM_MIN_SIZE + 1) + ROOM_MIN_SIZE;
+        int roomHeight = rand() % (ROOM_MAX_SIZE - ROOM_MIN_SIZE + 1) + ROOM_MIN_SIZE;
+        int x = rand() % (MAP_WIDTH - roomWidth - 1) + 1;
+        int y = rand() % (MAP_HEIGHT - roomHeight - 1) + 1;
+
+        Room newRoom = {x, y, roomWidth, roomHeight};
+
+        int failed = 0;
+
+        for (int j = 0; j < numRooms; j++) {
+            if (newRoom.x < rooms[j].x + rooms[j].width &&
+                newRoom.x + newRoom.width > rooms[j].x &&
+                newRoom.y < rooms[j].y + rooms[j].height &&
+                newRoom.y + newRoom.height > rooms[j].y) {
+                failed = 1;
+                break;
+            }
+        }
+
+        if (!failed) {
+            createRoom(newRoom);
+
+            if (numRooms > 0) {
+                int prevX = rooms[numRooms - 1].x + rooms[numRooms - 1].width / 2;
+                int prevY = rooms[numRooms - 1].y + rooms[numRooms - 1].height / 2;
+                int currX = newRoom.x + newRoom.width / 2;
+                int currY = newRoom.y + newRoom.height / 2;
+
+                if (rand() % 2) {
+                    createHorizontalTunnel(prevX, currX, prevY);
+                    createVerticalTunnel(prevY, currY, currX);
+                } else {
+                    createVerticalTunnel(prevY, currY, prevX);
+                    createHorizontalTunnel(prevX, currX, currY);
+                }
+            }
+
+            rooms[numRooms] = newRoom;
+            numRooms++;
+        }
+    }
+}
+
+void movePlayer(int dx, int dy) {
+    int newX = player.x + dx;
+    int newY = player.y + dy;
+
+    if (newX >= 0 && newX < MAP_WIDTH && newY >= 0 && newY < MAP_HEIGHT && map[newY][newX] == '.') {
+        player.x = newX;
+        player.y = newY;
+    }
+}
+
+int main() {
     initscr();
+    curs_set(0);
     keypad(stdscr, TRUE);
     noecho();
-    cbreak();
-    curs_set(0);
 
-    Posicao pos = {15,15};
+    generateMap();
 
-    //box(stdscr, ACS_VLINE, ACS_HLINE); // testar como funciona a caixa
-    refresh();
+    player.x = rooms[0].x + rooms[0].width / 2;
+    player.y = rooms[0].y + rooms[0].height / 2;
 
-    mvaddch(pos.posY, pos.posX, '@');
-    refresh();
-
-    while(1){
-        mvprintw(LINES - 1, 0, "Coordenadas: (%d, %d)", pos.posX, pos.posY);
-        barreira(); // Testar como é que aparecia a barreira
-        //TODO: barreira impenetrável
-        AlterarMov(&pos);
-        /*
-        if (pos.posX < 1) pos.posX = 1; // testar limites
-        if (pos.posY < 1) pos.posY = 1;
-        if (pos.posX > 70) pos.posX = 70;
-        if (pos.posY > 25) pos.posY = 25;
-        */
+    while (1) {
         clear();
-        //box(stdscr, ACS_VLINE, ACS_HLINE);
-        mvaddch(pos.posY, pos.posX, '@');
-        refresh();
+        printMap();
+
+        int input = getch();
+
+        switch (input) {
+            case KEY_UP:
+                movePlayer(0, -1);
+                break;
+            case KEY_DOWN:
+                movePlayer(0, 1);
+                break;
+            case KEY_LEFT:
+                movePlayer(-1, 0);
+                break;
+            case KEY_RIGHT:
+                movePlayer(1, 0);
+                break;
+            case 'q':
+                endwin();
+                return 0;
+        }
     }
 
     endwin();
