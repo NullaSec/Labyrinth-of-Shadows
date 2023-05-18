@@ -35,6 +35,7 @@ Room rooms[MAX_ROOMS];
 Monster monsters[MAX_MONSTERS];
 int numRooms = 0;
 int numMonsters = 0;
+int numDeaths = 0;
 
 void initializeMap() {
     for (int y = 0; y < MAP_HEIGHT; y++) {
@@ -102,15 +103,14 @@ void generateMap() {
         int x = rand() % (MAP_WIDTH - roomWidth - 1) + 1;
         int y = rand() % (MAP_HEIGHT - roomHeight - 1) + 1;
 
-        Room newRoom = {x, y, roomWidth, roomHeight};
-
+        Room newRoom = { x, y, roomWidth, roomHeight };
         int failed = 0;
 
         for (int j = 0; j < numRooms; j++) {
-            if (newRoom.x < rooms[j].x + rooms[j].width &&
-                newRoom.x + newRoom.width > rooms[j].x &&
-                newRoom.y < rooms[j].y + rooms[j].height &&
-                newRoom.y + newRoom.height > rooms[j].y) {
+            if (newRoom.x <= rooms[j].x + rooms[j].width &&
+                newRoom.x + newRoom.width >= rooms[j].x &&
+                newRoom.y <= rooms[j].y + rooms[j].height &&
+                newRoom.y + newRoom.height >= rooms[j].y) {
                 failed = 1;
                 break;
             }
@@ -125,7 +125,7 @@ void generateMap() {
                 int currX = newRoom.x + newRoom.width / 2;
                 int currY = newRoom.y + newRoom.height / 2;
 
-                if (rand() % 2) {
+                if (rand() % 2 == 0) {
                     createHorizontalTunnel(prevX, currX, prevY);
                     createVerticalTunnel(prevY, currY, currX);
                 } else {
@@ -134,10 +134,12 @@ void generateMap() {
                 }
             }
 
-            rooms[numRooms] = newRoom;
-            numRooms++;
+            rooms[numRooms++] = newRoom;
         }
     }
+
+    player.x = rooms[0].x + rooms[0].width / 2;
+    player.y = rooms[0].y + rooms[0].height / 2;
 }
 
 void movePlayer(int dx, int dy) {
@@ -152,93 +154,85 @@ void movePlayer(int dx, int dy) {
 
 void moveMonsters() {
     for (int i = 0; i < numMonsters; i++) {
-        // Verificar a distância entre o monstro e o jogador
-        int distanceX = player.x - monsters[i].x;
-        int distanceY = player.y - monsters[i].y;
+        int dx = player.x - monsters[i].x;
+        int dy = player.y - monsters[i].y;
+        int distance = sqrt(dx * dx + dy * dy);
 
-        // Verificar se o monstro está a uma distância menor ou igual a 6 do jogador
-        if (abs(distanceX) <= MONSTER_SIGHT_RANGE && abs(distanceY) <= MONSTER_SIGHT_RANGE) {
-            // Movimentar o monstro em direção ao jogador
-            int dx = 0;
-            int dy = 0;
-
-            if (distanceX > 0) {
-                dx = 1;
-            } else if (distanceX < 0) {
-                dx = -1;
+        if (distance <= MONSTER_SIGHT_RANGE) {
+            if (dx != 0) {
+                dx /= distance;
             }
-
-            if (distanceY > 0) {
-                dy = 1;
-            } else if (distanceY < 0) {
-                dy = -1;
+            if (dy != 0) {
+                dy /= distance;
             }
 
             int newX = monsters[i].x + dx;
             int newY = monsters[i].y + dy;
 
-            // Verificar se o movimento é válido
             if (newX >= 0 && newX < MAP_WIDTH && newY >= 0 && newY < MAP_HEIGHT && map[newY][newX] == '.') {
                 monsters[i].x = newX;
                 monsters[i].y = newY;
+
+                if (newX == player.x && newY == player.y) {
+                    numDeaths++;
+                    returnToMenu();
+                }
             }
-        } else {
-            // Movimentar o monstro aleatoriamente
-            int randomDirection = rand() % 4; // 0: cima, 1: baixo, 2: esquerda, 3: direita
-            int dx = 0;
-            int dy = 0;
-
-            switch (randomDirection) {
-                case 0:
-                    dy = -1;
-                    break;
-                case 1:
-                    dy = 1;
-                    break;
-                case 2:
-                    dx = -1;
-                    break;
-                case 3:
-                    dx = 1;
-                    break;
-            }
-
-            int newX = monsters[i].x + dx;
-            int newY = monsters[i].y + dy;
-
-            // Verificar se o movimento é válido
-            if (newX >= 0 && newX < MAP_WIDTH && newY >= 0 && newY < MAP_HEIGHT && map[newY][newX] == '.') {
-                monsters[i].x = newX;
-                monsters[i].y = newY;
-            }
-        }
-
-        // Verificar se o monstro se encontrou com o jogador
-        if (monsters[i].x == player.x && monsters[i].y == player.y) {
-            clear();
-            printw("Você morreu!\n");
-            refresh();
-            getch();
-            endwin();
-            exit(0);
         }
     }
 }
 
+void initializeGame() {
+    clear();
+    generateMap();
+    numMonsters = rand() % MAX_MONSTERS + 1;
+
+    for (int i = 0; i < numMonsters; i++) {
+        int x, y;
+
+        do {
+            x = rand() % MAP_WIDTH;
+            y = rand() % MAP_HEIGHT;
+        } while (map[y][x] != '.' || (x == player.x && y == player.y));
+
+        monsters[i].x = x;
+        monsters[i].y = y;
+    }
+
+    // Atualiza a posição inicial do jogador
+    do {
+        player.x = rand() % MAP_WIDTH;
+        player.y = rand() % MAP_HEIGHT;
+    } while (map[player.y][player.x] != '.');
+}
+
+
+void returnToMenu() {
+    clear();
+    printw("Você morreu!\n");
+    printw("Número de mortes: %d\n", numDeaths);
+    printw("Pressione qualquer tecla para voltar a jogar...\n");
+    refresh();
+    getch();
+    initializeGame();
+}
+
+void menu() {
+    clear();
+    printw("Bem-vindo ao Jogo!\n");
+    printw("Pressione qualquer tecla para começar...\n");
+    refresh();
+    getch();
+    initializeGame();
+}
+
 int main() {
     initscr();
-    curs_set(0);
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
 
-    generateMap();
-
-    player.x = rooms[0].x + rooms[0].width / 2;
-    player.y = rooms[0].y + rooms[0].height / 2;
-
-    for (int i = 0; i < MAX_MONSTERS; i++) {
-        monsters[i].x = rooms[i + 1].x + rooms[i + 1].width / 2;
-        monsters[i].y = rooms[i + 1].y + rooms[i + 1].height / 2;
-        numMonsters++;
-    }
+    menu();
 
     while (1) {
         clear();
@@ -247,26 +241,25 @@ int main() {
         int key = getch();
 
         switch (key) {
+            case KEY_UP:
+                movePlayer(0, -1);
+                break;
+            case KEY_DOWN:
+                movePlayer(0, 1);
+                break;
+            case KEY_LEFT:
+                movePlayer(-1, 0);
+                break;
+            case KEY_RIGHT:
+                movePlayer(1, 0);
+                break;
             case 'q':
                 endwin();
                 return 0;
-            case 'w':
-                movePlayer(0, -1);
-                break;
-            case 's':
-                movePlayer(0, 1);
-                break;
-            case 'a':
-                movePlayer(-1, 0);
-                break;
-            case 'd':
-                movePlayer(1, 0);
-                break;
         }
 
         moveMonsters();
     }
 
-    endwin();
     return 0;
 }
