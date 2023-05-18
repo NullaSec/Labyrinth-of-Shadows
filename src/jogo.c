@@ -16,6 +16,7 @@ typedef struct {
     int x;
     int y;
     int health;
+    char weapon[20]; // Adicionada a variável para a arma atual do jogador
 } Player;
 
 typedef struct {
@@ -72,6 +73,7 @@ void printMap() {
         printw("\n");
     }
     printw("Vida do jogador: %d\n", player.health);
+    printw("Arma atual: %s\n", player.weapon); // Exibe a arma atual do jogador
     refresh();
 }
 
@@ -143,6 +145,7 @@ void generateMap() {
     player.x = rooms[0].x + rooms[0].width / 2;
     player.y = rooms[0].y + rooms[0].height / 2;
     player.health = 100;
+    strcpy(player.weapon, "Faca"); // Define a arma inicial do jogador como "Faca"
 
     for (int i = 0; i < MAX_MONSTERS; i++) {
         monsters[i].x = -1;
@@ -219,6 +222,10 @@ void moveMonsters() {
     }
 }
 
+void printPlayerWeapon() {
+    printw("Arma atual: %s\n", player.weapon);
+}
+
 int main() {
     initscr();
     keypad(stdscr, TRUE);
@@ -231,6 +238,7 @@ int main() {
     while (1) {
         clear();
         printMap();
+        printPlayerWeapon(); // Adiciona a função para exibir a arma atual do jogador
 
         int key = getch();
 
@@ -271,7 +279,7 @@ int main() {
 
         if (numDeaths > 0) {
             clear();
-            printw("Game Over! Você morreu %d vez(es).\n", numDeaths);
+            printw("Game Over! Morreste");
             refresh();
             getch();
             endwin();
