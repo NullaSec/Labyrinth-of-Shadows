@@ -4,11 +4,11 @@
 #include <ncurses.h>
 #include <math.h> // Incluído para a função sqrt
 
-#define MAP_WIDTH 51
-#define MAP_HEIGHT 40
-#define MAX_ROOMS 100
-#define ROOM_MIN_SIZE 3
-#define ROOM_MAX_SIZE 6
+#define MAP_WIDTH 71
+#define MAP_HEIGHT 50
+#define MAX_ROOMS 140
+#define ROOM_MIN_SIZE 6
+#define ROOM_MAX_SIZE 14
 #define MAX_MONSTERS 5
 #define MONSTER_SIGHT_RANGE 6
 
@@ -49,7 +49,7 @@ void printMap() {
         for (int x = 0; x < MAP_WIDTH; x++) {
             if (x == player.x && y == player.y) {
                 printw("@ ");
-            } else if (map[y][x] == '.') {
+            } else {
                 int isMonster = 0;
                 for (int i = 0; i < numMonsters; i++) {
                     if (x == monsters[i].x && y == monsters[i].y) {
@@ -60,12 +60,8 @@ void printMap() {
                 if (isMonster) {
                     printw("M ");
                 } else {
-                    printw(". ");
+                    printw("%c ", map[y][x]);
                 }
-            } else if (map[y][x] == ' ') {
-                printw("  ");
-            } else {
-                printw("%c ", map[y][x]);
             }
         }
         printw("\n");
@@ -214,15 +210,31 @@ void moveMonsters() {
                 monsters[i].y = newY;
             }
         }
+
+        // Verificar se o monstro se encontrou com o jogador
+        if (monsters[i].x == player.x && monsters[i].y == player.y) {
+            clear();
+            printw("Você morreu!\n");
+            refresh();
+            getch();
+            endwin();
+            exit(0);
+        }
     }
 }
 
-void initializePlayer() {
+int main() {
+    initscr();
+    keypad(stdscr, TRUE);
+    curs_set(0);
+
+    generateMap();
+
     player.x = rooms[0].x + rooms[0].width / 2;
     player.y = rooms[0].y + rooms[0].height / 2;
-}
 
-void initializeMonsters() {
+    numMonsters = 0;
+
     for (int i = 0; i < MAX_MONSTERS; i++) {
         int roomIndex = rand() % numRooms;
         int x = rooms[roomIndex].x + rand() % rooms[roomIndex].width;
@@ -230,44 +242,38 @@ void initializeMonsters() {
 
         monsters[i].x = x;
         monsters[i].y = y;
+
+        numMonsters++;
     }
-
-    numMonsters = MAX_MONSTERS;
-}
-
-int main() {
-    initscr();
-    noecho();
-    curs_set(FALSE);
-
-    generateMap();
-    initializePlayer();
-    initializeMonsters();
 
     while (1) {
         clear();
         printMap();
-        moveMonsters();
+        refresh();
 
-        int input = getch();
-        switch (input) {
-            case 'w':
+        int ch = getch();
+
+        switch (ch) {
+            case KEY_UP:
                 movePlayer(0, -1);
                 break;
-            case 's':
+            case KEY_DOWN:
                 movePlayer(0, 1);
                 break;
-            case 'a':
+            case KEY_LEFT:
                 movePlayer(-1, 0);
                 break;
-            case 'd':
+            case KEY_RIGHT:
                 movePlayer(1, 0);
                 break;
             case 'q':
                 endwin();
                 return 0;
         }
+
+        moveMonsters();
     }
 
+    endwin();
     return 0;
 }
