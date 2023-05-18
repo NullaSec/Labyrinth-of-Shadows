@@ -49,7 +49,7 @@ void printMap() {
         for (int x = 0; x < MAP_WIDTH; x++) {
             if (x == player.x && y == player.y) {
                 printw("@ ");
-            } else {
+            } else if (abs(x - player.x) <= 5 && abs(y - player.y) <= 5) {
                 int isMonster = 0;
                 for (int i = 0; i < numMonsters; i++) {
                     if (x == monsters[i].x && y == monsters[i].y) {
@@ -62,6 +62,8 @@ void printMap() {
                 } else {
                     printw("%c ", map[y][x]);
                 }
+            } else {
+                printw("  "); // Espaço em branco para áreas fora do campo de visão
             }
         }
         printw("\n");
@@ -225,7 +227,6 @@ void moveMonsters() {
 
 int main() {
     initscr();
-    keypad(stdscr, TRUE);
     curs_set(0);
 
     generateMap();
@@ -233,42 +234,34 @@ int main() {
     player.x = rooms[0].x + rooms[0].width / 2;
     player.y = rooms[0].y + rooms[0].height / 2;
 
-    numMonsters = 0;
-
     for (int i = 0; i < MAX_MONSTERS; i++) {
-        int roomIndex = rand() % numRooms;
-        int x = rooms[roomIndex].x + rand() % rooms[roomIndex].width;
-        int y = rooms[roomIndex].y + rand() % rooms[roomIndex].height;
-
-        monsters[i].x = x;
-        monsters[i].y = y;
-
+        monsters[i].x = rooms[i + 1].x + rooms[i + 1].width / 2;
+        monsters[i].y = rooms[i + 1].y + rooms[i + 1].height / 2;
         numMonsters++;
     }
 
     while (1) {
         clear();
         printMap();
-        refresh();
 
-        int ch = getch();
+        int key = getch();
 
-        switch (ch) {
-            case KEY_UP:
-                movePlayer(0, -1);
-                break;
-            case KEY_DOWN:
-                movePlayer(0, 1);
-                break;
-            case KEY_LEFT:
-                movePlayer(-1, 0);
-                break;
-            case KEY_RIGHT:
-                movePlayer(1, 0);
-                break;
+        switch (key) {
             case 'q':
                 endwin();
                 return 0;
+            case 'w':
+                movePlayer(0, -1);
+                break;
+            case 's':
+                movePlayer(0, 1);
+                break;
+            case 'a':
+                movePlayer(-1, 0);
+                break;
+            case 'd':
+                movePlayer(1, 0);
+                break;
         }
 
         moveMonsters();
