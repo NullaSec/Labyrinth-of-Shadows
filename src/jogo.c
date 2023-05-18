@@ -49,7 +49,7 @@ void printMap() {
         for (int x = 0; x < MAP_WIDTH; x++) {
             if (x == player.x && y == player.y) {
                 printw("@ ");
-            } else {
+            } else if (map[y][x] == '.') {
                 int isMonster = 0;
                 for (int i = 0; i < numMonsters; i++) {
                     if (x == monsters[i].x && y == monsters[i].y) {
@@ -60,8 +60,12 @@ void printMap() {
                 if (isMonster) {
                     printw("M ");
                 } else {
-                    printw("%c ", map[y][x]);
+                    printw(". ");
                 }
+            } else if (map[y][x] == ' ') {
+                printw("  ");
+            } else {
+                printw("%c ", map[y][x]);
             }
         }
         printw("\n");
@@ -210,31 +214,15 @@ void moveMonsters() {
                 monsters[i].y = newY;
             }
         }
-
-        // Verificar se o monstro se encontrou com o jogador
-        if (monsters[i].x == player.x && monsters[i].y == player.y) {
-            clear();
-            printw("Você morreu!\n");
-            refresh();
-            getch();
-            endwin();
-            exit(0);
-        }
     }
 }
 
-int main() {
-    initscr();
-    keypad(stdscr, TRUE);
-    curs_set(0);
-
-    generateMap();
-
+void initializePlayer() {
     player.x = rooms[0].x + rooms[0].width / 2;
     player.y = rooms[0].y + rooms[0].height / 2;
+}
 
-    numMonsters = 0;
-
+void initializeMonsters() {
     for (int i = 0; i < MAX_MONSTERS; i++) {
         int roomIndex = rand() % numRooms;
         int x = rooms[roomIndex].x + rand() % rooms[roomIndex].width;
@@ -242,38 +230,44 @@ int main() {
 
         monsters[i].x = x;
         monsters[i].y = y;
-
-        numMonsters++;
     }
+
+    numMonsters = MAX_MONSTERS;
+}
+
+int main() {
+    initscr();
+    noecho();
+    curs_set(FALSE);
+
+    generateMap();
+    initializePlayer();
+    initializeMonsters();
 
     while (1) {
         clear();
         printMap();
-        refresh();
+        moveMonsters();
 
-        int ch = getch();
-
-        switch (ch) {
-            case KEY_UP:
+        int input = getch();
+        switch (input) {
+            case 'w':
                 movePlayer(0, -1);
                 break;
-            case KEY_DOWN:
+            case 's':
                 movePlayer(0, 1);
                 break;
-            case KEY_LEFT:
+            case 'a':
                 movePlayer(-1, 0);
                 break;
-            case KEY_RIGHT:
+            case 'd':
                 movePlayer(1, 0);
                 break;
             case 'q':
                 endwin();
                 return 0;
         }
-
-        moveMonsters();
     }
 
-    endwin();
     return 0;
 }
