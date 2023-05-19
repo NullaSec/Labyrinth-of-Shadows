@@ -52,20 +52,26 @@ void inicializarMapa() {
 void imprimirMapa() {
     for (int y = 0; y < MAP_HEIGHT; y++) {
         for (int x = 0; x < MAP_WIDTH; x++) {
-            if (x == jogador.x && y == jogador.y) {
-                printw("@ ");
-            } else if (abs(x - jogador.x) <= 5 && abs(y - jogador.y) <= 5) {
-                int ehMonstro = 0;
-                for (int i = 0; i < numMonstros; i++) {
-                    if (x == monstros[i].x && y == monstros[i].y) {
-                        ehMonstro = 1;
-                        break;
-                    }
-                }
-                if (ehMonstro) {
-                    printw("M ");
+            int dx = x - jogador.x;
+            int dy = y - jogador.y;
+            double distancia = sqrt(dx * dx + dy * dy);
+
+            if (distancia <= 7) { // Alterado o campo de visão para um círculo com raio 7
+                if (x == jogador.x && y == jogador.y) {
+                    printw("@ ");
                 } else {
-                    printw("%c ", mapa[y][x]);
+                    int ehMonstro = 0;
+                    for (int i = 0; i < numMonstros; i++) {
+                        if (x == monstros[i].x && y == monstros[i].y) {
+                            ehMonstro = 1;
+                            break;
+                        }
+                    }
+                    if (ehMonstro) {
+                        printw("M ");
+                    } else {
+                        printw("%c ", mapa[y][x]);
+                    }
                 }
             } else {
                 printw("  "); // Espaço em branco para áreas fora do campo de visão
@@ -208,11 +214,14 @@ void moverMonstros() {
             int novaY = monstros[i].y + dy;
 
             if (novaX >= 0 && novaX < MAP_WIDTH && novaY >= 0 && novaY < MAP_HEIGHT && mapa[novaY][novaX] == '.') {
-                monstros[i].x = novaX;
-                monstros[i].y = novaY;
+                // Verifica se a nova posição coincide com a posição atual do jogador
+                if (novaX != jogador.x || novaY != jogador.y) {
+                    monstros[i].x = novaX;
+                    monstros[i].y = novaY;
+                }
 
                 if (monstros[i].x == jogador.x && monstros[i].y == jogador.y) {
-                    jogador.saude -= 10; // Reduz a vida do jogador ao ser atacado pelo monstro
+                    jogador.saude -= 10;
                     if (jogador.saude <= 0) {
                         numMortes++;
                         return;
