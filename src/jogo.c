@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <ncurses.h>
 #include <math.h> // Incluído para a função sqrt
@@ -15,56 +16,56 @@
 typedef struct {
     int x;
     int y;
-    int health;
+    int saude;
     char weapon[20]; // Adicionada a variável para a arma atual do jogador
-} Player;
+} Jogador;
 
 typedef struct {
     int x;
     int y;
-    int width;
-    int height;
-} Room;
+    int largura;
+    int altura;
+} Quarto;
 
 typedef struct {
     int x;
     int y;
-    int health;
-} Monster;
+    int saude;
+} Monstro;
 
-char map[MAP_HEIGHT][MAP_WIDTH];
-Player player;
-Room rooms[MAX_ROOMS];
-Monster monsters[MAX_MONSTERS];
-int numRooms = 0;
-int numMonsters = 0;
-int numDeaths = 0;
+char mapa[MAP_HEIGHT][MAP_WIDTH];
+Jogador jogador;
+Quarto quartos[MAX_ROOMS];
+Monstro monstros[MAX_MONSTERS];
+int numQuartos = 0;
+int numMonstros = 0;
+int numMortes = 0;
 
-void initializeMap() {
+void inicializarMapa() {
     for (int y = 0; y < MAP_HEIGHT; y++) {
         for (int x = 0; x < MAP_WIDTH; x++) {
-            map[y][x] = '#';
+            mapa[y][x] = '#';
         }
     }
 }
 
-void printMap() {
+void imprimirMapa() {
     for (int y = 0; y < MAP_HEIGHT; y++) {
         for (int x = 0; x < MAP_WIDTH; x++) {
-            if (x == player.x && y == player.y) {
+            if (x == jogador.x && y == jogador.y) {
                 printw("@ ");
-            } else if (abs(x - player.x) <= 5 && abs(y - player.y) <= 5) {
-                int isMonster = 0;
-                for (int i = 0; i < numMonsters; i++) {
-                    if (x == monsters[i].x && y == monsters[i].y) {
-                        isMonster = 1;
+            } else if (abs(x - jogador.x) <= 5 && abs(y - jogador.y) <= 5) {
+                int ehMonstro = 0;
+                for (int i = 0; i < numMonstros; i++) {
+                    if (x == monstros[i].x && y == monstros[i].y) {
+                        ehMonstro = 1;
                         break;
                     }
                 }
-                if (isMonster) {
+                if (ehMonstro) {
                     printw("M ");
                 } else {
-                    printw("%c ", map[y][x]);
+                    printw("%c ", mapa[y][x]);
                 }
             } else {
                 printw("  "); // Espaço em branco para áreas fora do campo de visão
@@ -72,120 +73,120 @@ void printMap() {
         }
         printw("\n");
     }
-    printw("Vida do jogador: %d\n", player.health);
-    printw("Arma atual: %s\n", player.weapon); // Exibe a arma atual do jogador
+    printw("Vida do jogador: %d\n", jogador.saude);
+    printw("Arma atual: %s\n", jogador.weapon); // Exibe a arma atual do jogador
     refresh();
 }
 
-void createRoom(Room room) {
-    for (int y = room.y; y < room.y + room.height; y++) {
-        for (int x = room.x; x < room.x + room.width; x++) {
-            map[y][x] = '.';
+void criarQuarto(Quarto quarto) {
+    for (int y = quarto.y; y < quarto.y + quarto.altura; y++) {
+        for (int x = quarto.x; x < quarto.x + quarto.largura; x++) {
+            mapa[y][x] = '.';
         }
     }
 }
 
-void createHorizontalTunnel(int x1, int x2, int y) {
+void criarTunelHorizontal(int x1, int x2, int y) {
     for (int x = x1; x <= x2; x++) {
-        map[y][x] = '.';
+        mapa[y][x] = '.';
     }
 }
 
-void createVerticalTunnel(int y1, int y2, int x) {
+void criarTunelVertical(int y1, int y2, int x) {
     for (int y = y1; y <= y2; y++) {
-        map[y][x] = '.';
+        mapa[y][x] = '.';
     }
 }
 
-void generateMap() {
-    initializeMap();
+void gerarMapa() {
+    inicializarMapa();
 
     srand(time(NULL));
 
     for (int i = 0; i < MAX_ROOMS; i++) {
-        int roomWidth = rand() % (ROOM_MAX_SIZE - ROOM_MIN_SIZE + 1) + ROOM_MIN_SIZE;
-        int roomHeight = rand() % (ROOM_MAX_SIZE - ROOM_MIN_SIZE + 1) + ROOM_MIN_SIZE;
-        int x = rand() % (MAP_WIDTH - roomWidth - 1) + 1;
-        int y = rand() % (MAP_HEIGHT - roomHeight - 1) + 1;
+        int larguraQuarto = rand() % (ROOM_MAX_SIZE - ROOM_MIN_SIZE + 1) + ROOM_MIN_SIZE;
+        int alturaQuarto = rand() % (ROOM_MAX_SIZE - ROOM_MIN_SIZE + 1) + ROOM_MIN_SIZE;
+        int x = rand() % (MAP_WIDTH - larguraQuarto - 1) + 1;
+        int y = rand() % (MAP_HEIGHT - alturaQuarto - 1) + 1;
 
-        Room newRoom = { x, y, roomWidth, roomHeight };
+        Quarto novoQuarto = { x, y, larguraQuarto, alturaQuarto };
 
-        int failed = 0;
-        for (int j = 0; j < numRooms; j++) {
-            if (newRoom.x < rooms[j].x + rooms[j].width &&
-                newRoom.x + newRoom.width > rooms[j].x &&
-                newRoom.y < rooms[j].y + rooms[j].height &&
-                newRoom.y + newRoom.height > rooms[j].y) {
-                failed = 1;
+        int falhou = 0;
+        for (int j = 0; j < numQuartos; j++) {
+            if (novoQuarto.x < quartos[j].x + quartos[j].largura &&
+                novoQuarto.x + novoQuarto.largura > quartos[j].x &&
+                novoQuarto.y < quartos[j].y + quartos[j].altura &&
+                novoQuarto.y + novoQuarto.altura > quartos[j].y) {
+                falhou = 1;
                 break;
             }
         }
 
-        if (!failed) {
-            createRoom(newRoom);
+        if (!falhou) {
+            criarQuarto(novoQuarto);
 
-            if (numRooms > 0) {
-                int prevRoomX = rooms[numRooms - 1].x;
-                int prevRoomY = rooms[numRooms - 1].y;
+            if (numQuartos > 0) {
+                int xQuartoAnterior = quartos[numQuartos - 1].x;
+                int yQuartoAnterior = quartos[numQuartos - 1].y;
 
                 if (rand() % 2 == 0) {
-                    createHorizontalTunnel(prevRoomX, newRoom.x + newRoom.width / 2, prevRoomY + rooms[numRooms - 1].height / 2);
-                    createVerticalTunnel(prevRoomY, newRoom.y + newRoom.height / 2, newRoom.x + newRoom.width / 2);
+                    criarTunelHorizontal(xQuartoAnterior, novoQuarto.x + novoQuarto.largura / 2, yQuartoAnterior + quartos[numQuartos - 1].altura / 2);
+                    criarTunelVertical(yQuartoAnterior, novoQuarto.y + novoQuarto.altura / 2, novoQuarto.x + novoQuarto.largura / 2);
                 } else {
-                    createVerticalTunnel(prevRoomY, newRoom.y + newRoom.height / 2, prevRoomX + rooms[numRooms - 1].width / 2);
-                    createHorizontalTunnel(prevRoomX, newRoom.x + newRoom.width / 2, newRoom.y + newRoom.height / 2);
+                    criarTunelVertical(yQuartoAnterior, novoQuarto.y + novoQuarto.altura / 2, xQuartoAnterior + quartos[numQuartos - 1].largura / 2);
+                    criarTunelHorizontal(xQuartoAnterior, novoQuarto.x + novoQuarto.largura / 2, novoQuarto.y + novoQuarto.altura / 2);
                 }
             }
 
-            rooms[numRooms] = newRoom;
-            numRooms++;
+            quartos[numQuartos] = novoQuarto;
+            numQuartos++;
         }
     }
 
-    player.x = rooms[0].x + rooms[0].width / 2;
-    player.y = rooms[0].y + rooms[0].height / 2;
-    player.health = 100;
-    strcpy(player.weapon, "Faca"); // Define a arma inicial do jogador como "Faca"
+    jogador.x = quartos[0].x + quartos[0].largura / 2;
+    jogador.y = quartos[0].y + quartos[0].altura / 2;
+    jogador.saude = 100;
+    strcpy(jogador.weapon, "Faca"); // Define a arma inicial do jogador como "Faca"
 
     for (int i = 0; i < MAX_MONSTERS; i++) {
-        monsters[i].x = -1;
-        monsters[i].y = -1;
-        monsters[i].health = 0;
+        monstros[i].x = -1;
+        monstros[i].y = -1;
+        monstros[i].saude = 0;
     }
 }
 
-void addMonster(int x, int y) {
-    Monster newMonster = { x, y, 20 };
-    monsters[numMonsters] = newMonster;
-    numMonsters++;
+void adicionarMonstro(int x, int y) {
+    Monstro novoMonstro = { x, y, 20 };
+    monstros[numMonstros] = novoMonstro;
+    numMonstros++;
 }
 
-void placeMonsters() {
-    for (int i = 0; i < numRooms; i++) {
-        int numMonstersInRoom = rand() % 3 + 1;
+void colocarMonstros() {
+    for (int i = 0; i < numQuartos; i++) {
+        int numMonstrosNoQuarto = rand() % 3 + 1;
 
-        for (int j = 0; j < numMonstersInRoom; j++) {
-            int x = rand() % (rooms[i].width - 2) + rooms[i].x + 1;
-            int y = rand() % (rooms[i].height - 2) + rooms[i].y + 1;
+        for (int j = 0; j < numMonstrosNoQuarto; j++) {
+            int x = rand() % (quartos[i].largura - 2) + quartos[i].x + 1;
+            int y = rand() % (quartos[i].altura - 2) + quartos[i].y + 1;
 
-            addMonster(x, y);
+            adicionarMonstro(x, y);
         }
     }
 }
 
-void movePlayer(int dx, int dy) {
-    int newX = player.x + dx;
-    int newY = player.y + dy;
+void moverJogador(int dx, int dy) {
+    int novaX = jogador.x + dx;
+    int novaY = jogador.y + dy;
 
-    if (newX >= 0 && newX < MAP_WIDTH && newY >= 0 && newY < MAP_HEIGHT && map[newY][newX] == '.') {
-        player.x = newX;
-        player.y = newY;
+    if (novaX >= 0 && novaX < MAP_WIDTH && novaY >= 0 && novaY < MAP_HEIGHT && mapa[novaY][novaX] == '.') {
+        jogador.x = novaX;
+        jogador.y = novaY;
 
-        for (int i = 0; i < numMonsters; i++) {
-            if (monsters[i].x == player.x && monsters[i].y == player.y) {
-                player.health -= 10; // Reduz a vida do jogador ao ser atacado pelo monstro
-                if (player.health <= 0) {
-                    numDeaths++;
+        for (int i = 0; i < numMonstros; i++) {
+            if (monstros[i].x == jogador.x && monstros[i].y == jogador.y) {
+                jogador.saude -= 10; // Reduz a vida do jogador ao ser atacado pelo monstro
+                if (jogador.saude <= 0) {
+                    numMortes++;
                     return;
                 }
             }
@@ -193,27 +194,27 @@ void movePlayer(int dx, int dy) {
     }
 }
 
-void moveMonsters() {
-    for (int i = 0; i < numMonsters; i++) {
-        int dx = player.x - monsters[i].x;
-        int dy = player.y - monsters[i].y;
-        double distance = sqrt(dx * dx + dy * dy);
+void moverMonstros() {
+    for (int i = 0; i < numMonstros; i++) {
+        int dx = jogador.x - monstros[i].x;
+        int dy = jogador.y - monstros[i].y;
+        double distancia = sqrt(dx * dx + dy * dy);
 
-        if (distance <= MONSTER_SIGHT_RANGE) {
-            dx = (int)(round(dx / distance));
-            dy = (int)(round(dy / distance));
+        if (distancia <= MONSTER_SIGHT_RANGE) {
+            dx = (int)(round(dx / distancia));
+            dy = (int)(round(dy / distancia));
 
-            int newX = monsters[i].x + dx;
-            int newY = monsters[i].y + dy;
+            int novaX = monstros[i].x + dx;
+            int novaY = monstros[i].y + dy;
 
-            if (newX >= 0 && newX < MAP_WIDTH && newY >= 0 && newY < MAP_HEIGHT && map[newY][newX] == '.') {
-                monsters[i].x = newX;
-                monsters[i].y = newY;
+            if (novaX >= 0 && novaX < MAP_WIDTH && novaY >= 0 && novaY < MAP_HEIGHT && mapa[novaY][novaX] == '.') {
+                monstros[i].x = novaX;
+                monstros[i].y = novaY;
 
-                if (monsters[i].x == player.x && monsters[i].y == player.y) {
-                    player.health -= 10; // Reduz a vida do jogador ao ser atacado pelo monstro
-                    if (player.health <= 0) {
-                        numDeaths++;
+                if (monstros[i].x == jogador.x && monstros[i].y == jogador.y) {
+                    jogador.saude -= 10; // Reduz a vida do jogador ao ser atacado pelo monstro
+                    if (jogador.saude <= 0) {
+                        numMortes++;
                         return;
                     }
                 }
@@ -222,8 +223,8 @@ void moveMonsters() {
     }
 }
 
-void printPlayerWeapon() {
-    printw("Arma atual: %s\n", player.weapon);
+void imprimirArmaJogador() {
+    printw("Arma atual: %s\n", jogador.weapon);
 }
 
 int main() {
@@ -232,42 +233,42 @@ int main() {
     curs_set(0);
     noecho();
 
-    generateMap();
-    placeMonsters();
+    gerarMapa();
+    colocarMonstros();
 
     while (1) {
         clear();
-        printMap();
-        printPlayerWeapon(); // Adiciona a função para exibir a arma atual do jogador
+        imprimirMapa();
+        imprimirArmaJogador(); // Adiciona a função para exibir a arma atual do jogador
 
         int key = getch();
 
         switch (key) {
             case KEY_UP:
-                movePlayer(0, -1);
+                moverJogador(0, -1);
                 break;
             case KEY_DOWN:
-                movePlayer(0, 1);
+                moverJogador(0, 1);
                 break;
             case KEY_LEFT:
-                movePlayer(-1, 0);
+                moverJogador(-1, 0);
                 break;
             case KEY_RIGHT:
-                movePlayer(1, 0);
+                moverJogador(1, 0);
                 break;
             case 'q':
                 endwin();
                 return 0;
             case 'e':
-                for (int i = 0; i < numMonsters; i++) {
-                    if (abs(monsters[i].x - player.x) <= 1 && abs(monsters[i].y - player.y) <= 1) {
-                        monsters[i].health -= 20; // Dano da faca
-                        if (monsters[i].health <= 0) {
-                            // Monstro morto
-                            monsters[i] = monsters[numMonsters - 1];
-                            numMonsters--;
+                for (int i = 0; i < numMonstros; i++) {
+                    if (abs(monstros[i].x - jogador.x) <= 1 && abs(monstros[i].y - jogador.y) <= 1) {
+                        monstros[i].saude -= 20; // Reduz a saúde do monstro ao atacá-lo
+                        if (monstros[i].saude <= 0) {
+                            for (int j = i; j < numMonstros - 1; j++) {
+                                monstros[j] = monstros[j + 1];
+                            }
+                            numMonstros--;
                         }
-                        break;
                     }
                 }
                 break;
@@ -275,18 +276,26 @@ int main() {
                 break;
         }
 
-        moveMonsters();
-
-        if (numDeaths > 0) {
+        if (numMonstros == 0) {
             clear();
-            printw("Game Over! Morreste");
+            printw("Parabéns! Você derrotou todos os monstros!\n");
+            printw("Número de mortes: %d\n", numMortes);
+            refresh();
+            getch();
+            endwin();
+            return 0;
+        }
+
+        moverMonstros();
+
+        if (numMortes > 0) {
+            clear();
+            printw("Você foi morto por um monstro!\n");
+            printw("Número de mortes: %d\n", numMortes);
             refresh();
             getch();
             endwin();
             return 0;
         }
     }
-
-    endwin();
-    return 0;
 }
