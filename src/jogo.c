@@ -8,8 +8,8 @@
 #define MAP_WIDTH 71
 #define MAP_HEIGHT 50
 #define MAX_ROOMS 140
-#define ROOM_MIN_SIZE 6
-#define ROOM_MAX_SIZE 14
+#define ROOM_MIN_SIZE 12
+#define ROOM_MAX_SIZE 25
 #define MAX_MONSTERS 5
 #define MONSTER_SIGHT_RANGE 6
 
@@ -44,7 +44,7 @@ int numMortes = 0;
 void inicializarMapa() {
     for (int y = 0; y < MAP_HEIGHT; y++) {
         for (int x = 0; x < MAP_WIDTH; x++) {
-            mapa[y][x] = '#';
+            mapa[y][x] = ' ';
         }
     }
 }
@@ -85,21 +85,21 @@ void imprimirMapa() {
 }
 
 void criarQuarto(Quarto quarto) {
-    for (int y = quarto.y; y < quarto.y + quarto.altura; y++) {
-        for (int x = quarto.x; x < quarto.x + quarto.largura; x++) {
-            mapa[y][x] = '.';
-        }
-    }
+    for (int y = quarto.y + 1; y < quarto.y + quarto.altura - 1; y++) {
+       for (int x = quarto.x + 1; x < quarto.x + quarto.largura - 1; x++) {
+        mapa[y][x] = '.';
+       }
+    } 
 }
 
 void criarTunelHorizontal(int x1, int x2, int y) {
-    for (int x = x1; x <= x2; x++) {
+    for (int x = x1 + 1; x <= x2 - 1; x++) {
         mapa[y][x] = '.';
     }
 }
 
 void criarTunelVertical(int y1, int y2, int x) {
-    for (int y = y1; y <= y2; y++) {
+    for (int y = y1 + 1; y <= y2 - 1; y++) {
         mapa[y][x] = '.';
     }
 }
@@ -168,6 +168,8 @@ void adicionarMonstro(int x, int y) {
 }
 
 void colocarMonstros() {
+    numMonstros = 0;
+    memset(monstros, 0, sizeof(monstros));
     for (int i = 0; i < numQuartos; i++) {
         int numMonstrosNoQuarto = rand() % 3 + 1;
 
@@ -175,10 +177,25 @@ void colocarMonstros() {
             int x = rand() % (quartos[i].largura - 2) + quartos[i].x + 1;
             int y = rand() % (quartos[i].altura - 2) + quartos[i].y + 1;
 
+           if (posicaoValida(x, y)) {
             adicionarMonstro(x, y);
         }
+           }
     }
 }
+
+int posicaoValida(int x, int y) {
+    if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) {
+        return 0; // Fora dos limites do mapa
+    }
+
+    if (mapa[y][x] == '.' || mapa[y][x] == '#') {
+        return 1; // Posição válida em um quarto ou caverna
+    }
+
+    return 0; // Não é uma posição válida
+}
+
 
 void moverJogador(int dx, int dy) {
     int novaX = jogador.x + dx;
