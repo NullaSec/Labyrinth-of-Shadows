@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -lncurses -Wall -Wextra -pedantic -O2
+CFLAGS = -lncurses -Wall -Wextra -pedantic -O2 -lm
 SOURCES = ./src/*.c
 
 all: LabyrinthOfShadows run clean

@@ -1,17 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <time.h> // Para que serve isto??
 #include <ncurses.h>
 #include <math.h> // Incluído para a função sqrt
 
-#define MAP_WIDTH 71
-#define MAP_HEIGHT 50
-#define MAX_ROOMS 140
-#define ROOM_MIN_SIZE 12
-#define ROOM_MAX_SIZE 25
-#define MAX_MONSTERS 5
-#define MONSTER_SIGHT_RANGE 6
+#define LarguraMapa 71
+#define AlturaMapa 50
+#define MaxQuartos 140
+#define TamanhoMinQuarto 12
+#define TamanhoMaxQuarto 25
+#define MaxMonstros 5
+#define VisaoMonstro 6
 
 typedef struct {
     int x;
@@ -33,25 +33,25 @@ typedef struct {
     int saude;
 } Monstro;
 
-char mapa[MAP_HEIGHT][MAP_WIDTH];
+char mapa[AlturaMapa][LarguraMapa];
 Jogador jogador;
-Quarto quartos[MAX_ROOMS];
-Monstro monstros[MAX_MONSTERS];
+Quarto quartos[MaxQuartos];
+Monstro monstros[MaxMonstros];
 int numQuartos = 0;
 int numMonstros = 0;
 int numMortes = 0;
 
-void inicializarMapa() {
-    for (int y = 0; y < MAP_HEIGHT; y++) {
-        for (int x = 0; x < MAP_WIDTH; x++) {
+void iniciarMapa() {
+    for (int y = 0; y < AlturaMapa; y++) {
+        for (int x = 0; x < LarguraMapa; x++) {
             mapa[y][x] = ' ';
         }
     }
 }
 
 void imprimirMapa() {
-    for (int y = 0; y < MAP_HEIGHT; y++) {
-        for (int x = 0; x < MAP_WIDTH; x++) {
+    for (int y = 0; y < AlturaMapa; y++) {
+        for (int x = 0; x < LarguraMapa; x++) {
             int dx = x - jogador.x;
             int dy = y - jogador.y;
             double distancia = sqrt(dx * dx + dy * dy);
@@ -105,15 +105,16 @@ void criarTunelVertical(int y1, int y2, int x) {
 }
 
 void gerarMapa() {
-    inicializarMapa();
+    iniciarMapa();
 
     srand(time(NULL));
 
-    for (int i = 0; i < MAX_ROOMS; i++) {
-        int larguraQuarto = rand() % (ROOM_MAX_SIZE - ROOM_MIN_SIZE + 1) + ROOM_MIN_SIZE;
-        int alturaQuarto = rand() % (ROOM_MAX_SIZE - ROOM_MIN_SIZE + 1) + ROOM_MIN_SIZE;
-        int x = rand() % (MAP_WIDTH - larguraQuarto - 1) + 1;
-        int y = rand() % (MAP_HEIGHT - alturaQuarto - 1) + 1;
+    int i, larguraQuarto, alturaQuarto, x, y;
+    for (i = 0; i < MaxQuartos; i++) {
+        larguraQuarto = rand() % (TamanhoMaxQuarto - TamanhoMinQuarto + 1) + TamanhoMinQuarto;
+        alturaQuarto = rand() % (TamanhoMaxQuarto - TamanhoMinQuarto + 1) + TamanhoMinQuarto;
+        x = rand() % (LarguraMapa - larguraQuarto - 1) + 1;
+        y = rand() % (AlturaMapa - alturaQuarto - 1) + 1;
 
         Quarto novoQuarto = { x, y, larguraQuarto, alturaQuarto };
 
@@ -131,9 +132,10 @@ void gerarMapa() {
         if (!falhou) {
             criarQuarto(novoQuarto);
 
+            int xQuartoAnterior, yQuartoAnterior;
             if (numQuartos > 0) {
-                int xQuartoAnterior = quartos[numQuartos - 1].x;
-                int yQuartoAnterior = quartos[numQuartos - 1].y;
+                xQuartoAnterior = quartos[numQuartos - 1].x;
+                yQuartoAnterior = quartos[numQuartos - 1].y;
 
                 if (rand() % 2 == 0) {
                     criarTunelHorizontal(xQuartoAnterior, novoQuarto.x + novoQuarto.largura / 2, yQuartoAnterior + quartos[numQuartos - 1].altura / 2);
@@ -154,7 +156,7 @@ void gerarMapa() {
     jogador.saude = 100;
     strcpy(jogador.weapon, "Faca"); // Define a arma inicial do jogador como "Faca"
 
-    for (int i = 0; i < MAX_MONSTERS; i++) {
+    for (int i = 0; i < MaxMonstros; i++) {
         monstros[i].x = -1;
         monstros[i].y = -1;
         monstros[i].saude = 0;
@@ -167,25 +169,8 @@ void adicionarMonstro(int x, int y) {
     numMonstros++;
 }
 
-void colocarMonstros() {
-    numMonstros = 0;
-    memset(monstros, 0, sizeof(monstros));
-    for (int i = 0; i < numQuartos; i++) {
-        int numMonstrosNoQuarto = rand() % 3 + 1;
-
-        for (int j = 0; j < numMonstrosNoQuarto; j++) {
-            int x = rand() % (quartos[i].largura - 2) + quartos[i].x + 1;
-            int y = rand() % (quartos[i].altura - 2) + quartos[i].y + 1;
-
-           if (posicaoValida(x, y)) {
-            adicionarMonstro(x, y);
-        }
-           }
-    }
-}
-
 int posicaoValida(int x, int y) {
-    if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) {
+    if (x < 0 || x >= LarguraMapa || y < 0 || y >= AlturaMapa) {
         return 0; // Fora dos limites do mapa
     }
 
@@ -196,12 +181,29 @@ int posicaoValida(int x, int y) {
     return 0; // Não é uma posição válida
 }
 
+void colocarMonstros() {
+    numMonstros = 0;
+    memset(monstros, 0, sizeof(monstros));
+    for (int i = 0; i < numQuartos; i++) {
+        int numMonstrosNoQuarto = rand() % 3 + 1;
+
+        int x, y;
+        for (int j = 0; j < numMonstrosNoQuarto; j++) {
+            x = rand() % (quartos[i].largura - 2) + quartos[i].x + 1;
+            y = rand() % (quartos[i].altura - 2) + quartos[i].y + 1;
+
+            if (posicaoValida(x, y)) adicionarMonstro(x, y);
+        }
+    }
+}
 
 void moverJogador(int dx, int dy) {
-    int novaX = jogador.x + dx;
-    int novaY = jogador.y + dy;
+    
+    int novaX, novaY;
+    novaX = jogador.x + dx;
+    novaY = jogador.y + dy;
 
-    if (novaX >= 0 && novaX < MAP_WIDTH && novaY >= 0 && novaY < MAP_HEIGHT && mapa[novaY][novaX] == '.') {
+    if (novaX >= 0 && novaX < LarguraMapa && novaY >= 0 && novaY < AlturaMapa && mapa[novaY][novaX] == '.') {
         jogador.x = novaX;
         jogador.y = novaY;
 
@@ -218,19 +220,20 @@ void moverJogador(int dx, int dy) {
 }
 
 void moverMonstros() {
-    for (int i = 0; i < numMonstros; i++) {
-        int dx = jogador.x - monstros[i].x;
-        int dy = jogador.y - monstros[i].y;
+    int i, dx, dy, novaX, novaY;
+    for (i = 0; i < numMonstros; i++) {
+        dx = jogador.x - monstros[i].x;
+        dy = jogador.y - monstros[i].y;
         double distancia = sqrt(dx * dx + dy * dy);
 
-        if (distancia <= MONSTER_SIGHT_RANGE) {
+        if (distancia <= VisaoMonstro) {
             dx = (int)(round(dx / distancia));
             dy = (int)(round(dy / distancia));
 
-            int novaX = monstros[i].x + dx;
-            int novaY = monstros[i].y + dy;
+            novaX = monstros[i].x + dx;
+            novaY = monstros[i].y + dy;
 
-            if (novaX >= 0 && novaX < MAP_WIDTH && novaY >= 0 && novaY < MAP_HEIGHT && mapa[novaY][novaX] == '.') {
+            if (novaX >= 0 && novaX < LarguraMapa && novaY >= 0 && novaY < AlturaMapa && mapa[novaY][novaX] == '.') {
                 // Verifica se a nova posição coincide com a posição atual do jogador
                 if (novaX != jogador.x || novaY != jogador.y) {
                     monstros[i].x = novaX;
@@ -270,21 +273,27 @@ int main() {
         int key = getch();
 
         switch (key) {
-            case KEY_UP:
-                moverJogador(0, -1);
-                break;
-            case KEY_DOWN:
-                moverJogador(0, 1);
-                break;
-            case KEY_LEFT:
-                moverJogador(-1, 0);
-                break;
-            case KEY_RIGHT:
-                moverJogador(1, 0);
-                break;
+            case '8':
+            case KEY_UP: moverJogador(0, -1); break;
+            case '2':
+            case KEY_DOWN: moverJogador(0, 1); break;
+            case '4':
+            case KEY_LEFT: moverJogador(-1, 0); break;
+            case '6':
+            case KEY_RIGHT: moverJogador(1, 0); break;
+            case KEY_A1: 
+            case '7': moverJogador(-1, -1); break;
+            case KEY_A3: 
+            case '9': moverJogador(1, -1); break;
+            case KEY_C1: 
+            case '1': moverJogador(-1, 1); break;
+            case KEY_C3: 
+            case '3': moverJogador(1, +1); break;
+
             case 'q':
                 endwin();
                 return 0;
+
             case 'e':
                 for (int i = 0; i < numMonstros; i++) {
                     if (abs(monstros[i].x - jogador.x) <= 1 && abs(monstros[i].y - jogador.y) <= 1) {
@@ -298,8 +307,8 @@ int main() {
                     }
                 }
                 break;
-            default:
-                break;
+
+            default: break;
         }
 
         if (numMonstros == 0) {
