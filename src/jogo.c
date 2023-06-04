@@ -5,12 +5,12 @@
 #include <ncurses.h>
 #include <math.h> // Incluído para a função sqrt
 
-#define LarguraMapa 71
+#define LarguraMapa 72
 #define AlturaMapa 50
-#define MaxQuartos 140
+#define MaxQuartos 150
 #define TamanhoMinQuarto 12
 #define TamanhoMaxQuarto 25
-#define MaxMonstros 5
+#define MaxMonstros 15
 #define VisaoMonstro 6
 
 typedef struct {
@@ -40,6 +40,7 @@ Monstro monstros[MaxMonstros];
 int numQuartos = 0;
 int numMonstros = 0;
 int numMortes = 0;
+int numMonstrosMortos = 0;
 
 void iniciarMapa() {
     for (int y = 0; y < AlturaMapa; y++) {
@@ -47,6 +48,18 @@ void iniciarMapa() {
             mapa[y][x] = ' ';
         }
     }
+    // Preencher as paredes horizontais
+    for (int x = 0; x < LarguraMapa; x++) {
+        mapa[0][x] = '#';
+        mapa[AlturaMapa - 1][x] = '#';
+    }
+
+// Preencher as paredes verticais
+    for (int y = 0; y < AlturaMapa; y++) {
+        mapa[y][0] = '#';
+        mapa[y][LarguraMapa - 1] = '#';
+    }   
+
 }
 
 void imprimirMapa() {
@@ -70,7 +83,11 @@ void imprimirMapa() {
                     if (ehMonstro) {
                         printw("M ");
                     } else {
-                        printw("%c ", mapa[y][x]);
+                        if (verificarVisibilidade(jogador.x, jogador.y, x, y)) { // Verifica a visibilidade
+                            printw("%c ", mapa[y][x]);
+                        } else {
+                            printw("# "); // Exibe uma parede se estiver fora da visibilidade
+                        }
                     }
                 }
             } else {
@@ -81,8 +98,34 @@ void imprimirMapa() {
     }
     printw("Vida do jogador: %d\n", jogador.saude);
     printw("Arma atual: %s\n", jogador.weapon); // Exibe a arma atual do jogador
+    printw("Número de Monstros mortos: %d\n", numMonstrosMortos);
     refresh();
 }
+
+int verificarVisibilidade(int x1, int y1, int x2, int y2) {
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+    int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+    double xIncrement = dx / (double)steps;
+    double yIncrement = dy / (double)steps;
+    double x = x1;
+    double y = y1;
+
+    for (int i = 0; i < steps; i++) {
+        x += xIncrement;
+        y += yIncrement;
+
+        int mapX = (int)x;
+        int mapY = (int)y;
+
+        if (mapa[mapY][mapX] == '#') {
+            return 0; // Raio encontrou uma parede, posição não é visível
+        }
+    }
+
+    return 1; // Raio atingiu a posição sem encontrar paredes, posição é visível
+}
+
 
 void criarQuarto(Quarto quarto) {
     for (int y = quarto.y + 1; y < quarto.y + quarto.altura - 1; y++) {
@@ -92,15 +135,18 @@ void criarQuarto(Quarto quarto) {
     } 
 }
 
+
 void criarTunelHorizontal(int x1, int x2, int y) {
-    for (int x = x1 + 1; x <= x2 - 1; x++) {
+    for (int x = x1; x <= x2; x++) {
         mapa[y][x] = '.';
+        mapa[y+1][x] = '.';
     }
 }
 
 void criarTunelVertical(int y1, int y2, int x) {
-    for (int y = y1 + 1; y <= y2 - 1; y++) {
+    for (int y = y1; y <= y2; y++) {
         mapa[y][x] = '.';
+        mapa[y][x+1] = '.';
     }
 }
 
@@ -147,8 +193,37 @@ void gerarMapa() {
             }
 
             quartos[numQuartos] = novoQuarto;
+            if (numQuartos > 0) {
+                int quartoAnterior = rand() % numQuartos;
+                int xQuartoAnterior = quartos[quartoAnterior].x + quartos[quartoAnterior].largura / 2;
+                int yQuartoAnterior = quartos[quartoAnterior].y + quartos[quartoAnterior].altura / 2;
+
+                int xNovoQuarto = novoQuarto.x + novoQuarto.largura / 2;
+                int yNovoQuarto = novoQuarto.y + novoQuarto.altura / 2;
+
+                if (rand() % 2 == 0) {
+                   criarTunelHorizontal(xQuartoAnterior, xNovoQuarto, yQuartoAnterior);
+                   criarTunelVertical(yQuartoAnterior, yNovoQuarto, xNovoQuarto);
+                } else {
+                   criarTunelVertical(yQuartoAnterior, yNovoQuarto, xQuartoAnterior);
+                   criarTunelHorizontal(xQuartoAnterior, xNovoQuarto, yNovoQuarto);
+                }
+            }
+
             numQuartos++;
         }
+    }
+
+// Preencher as paredes horizontais
+    for (int x = 0; x < LarguraMapa; x++) {
+        mapa[0][x] = '#';
+        mapa[AlturaMapa - 1][x] = '#';
+    }
+
+// Preencher as paredes verticais
+    for (int y = 0; y < AlturaMapa; y++) {
+        mapa[y][0] = '#';
+        mapa[y][LarguraMapa - 1] = '#';
     }
 
     jogador.x = quartos[0].x + quartos[0].largura / 2;
@@ -160,6 +235,16 @@ void gerarMapa() {
         monstros[i].x = -1;
         monstros[i].y = -1;
         monstros[i].saude = 0;
+    }
+}
+
+void preencherVazios() {
+    for (int y = 0; y < AlturaMapa; y++) {
+        for (int x = 0; x < LarguraMapa; x++) {
+            if (mapa[y][x] == ' ') {
+                mapa[y][x] = '#';
+            }
+        }
     }
 }
 
@@ -264,6 +349,7 @@ int main() {
 
     gerarMapa();
     colocarMonstros();
+    preencherVazios();
 
     while (1) {
         clear();
@@ -303,6 +389,7 @@ int main() {
                                 monstros[j] = monstros[j + 1];
                             }
                             numMonstros--;
+                            numMonstrosMortos++;
                         }
                     }
                 }
@@ -311,10 +398,9 @@ int main() {
             default: break;
         }
 
-        if (numMonstros == 0) {
+        if (numMonstrosMortos == 10) {
             clear();
             printw("Parabéns! Você derrotou todos os monstros!\n");
-            printw("Número de mortes: %d\n", numMortes);
             refresh();
             getch();
             endwin();
@@ -326,7 +412,7 @@ int main() {
         if (numMortes > 0) {
             clear();
             printw("Você foi morto por um monstro!\n");
-            printw("Número de mortes: %d\n", numMortes);
+            printw("Número de mostros mortos: %d\n", numMonstrosMortos);
             refresh();
             getch();
             endwin();
