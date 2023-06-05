@@ -122,7 +122,7 @@ void imprimirMapa() {
     }
     printw("Vida do jogador: %d\n", jogador.saude);
     printw("Arma atual: %s\n", jogador.weapon); // Exibe a arma atual do jogador
-    printw("Número de Monstros mortos: %d / 8\n", numMonstrosMortos);
+    printw("Número de Monstros mortos: %d / 5\n", numMonstrosMortos);
     refresh();
 }
 
@@ -135,14 +135,30 @@ void criarQuarto(Quarto quarto) {
 }
 
 void criarTunelHorizontal(int x1, int x2, int y) {
+    int salaAdjacente = 0;
     for (int x = x1; x <= x2; x++) {
+        if (mapa[y][x] == '.')
+            salaAdjacente = 1;
+        mapa[y][x] = '.';
+        mapa[y+1][x] = '.';
+    }
+    if (!salaAdjacente) {
+        int x = (x1 + x2) / 2;
         mapa[y][x] = '.';
         mapa[y+1][x] = '.';
     }
 }
 
 void criarTunelVertical(int y1, int y2, int x) {
+    int salaAdjacente = 0;
     for (int y = y1; y <= y2; y++) {
+        if (mapa[y][x] == '.')
+            salaAdjacente = 1;
+        mapa[y][x] = '.';
+        mapa[y][x+1] = '.';
+    }
+    if (!salaAdjacente) {
+        int y = (y1 + y2) / 2;
         mapa[y][x] = '.';
         mapa[y][x+1] = '.';
     }
@@ -403,7 +419,7 @@ int main() {
             default: break;
         }
 
-        if (numMonstrosMortos == 8) {
+        if (numMonstrosMortos == 5) {
             clear();
             printw("Parabéns! Você derrotou todos os monstros!\n");
             refresh();
@@ -417,7 +433,7 @@ int main() {
         if (numMortes > 0) {
             clear();
             printw("Você foi morto por um monstro!\n");
-            printw("Número de mostros mortos: %d\n", numMonstrosMortos);
+            printw("Número de monstros mortos: %d\n", numMonstrosMortos);
             refresh();
             getch();
             endwin();
