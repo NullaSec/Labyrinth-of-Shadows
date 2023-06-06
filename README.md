@@ -5,15 +5,13 @@ O `Makefile` é o ficheiro que tem os comando para correr o jogo, não precisam 
 
 A `src` é a pasta que tem o código do jogo e os headers (pastas que acabam em .h usadas para partilhar funções entre os ficheiros).
 
-O `README.md` é isto que estão a ler agora, podem cagar.
+O `README.md` é isto que estão a ler agora.
 
 
 ### Como atualizar o código no repositório
 Caso a opção Add File > Upload Files não vos apareça façam o que diz no vídeo:
 
 https://www.youtube.com/watch?v=LxkXT9WD7yk
-
-Os indianos nunca falham
 
 ### Como correr o jogo (SÓ LINUX):
 - 1º: Transferir os ficheiros
@@ -34,6 +32,6 @@ Os indianos nunca falham
   
 	`ls` na pasta correta deve mostrar ` Makefile    src` ou algo do género.
 	
-- 4º: Basta escrever `make` quando estiverem dentro da pasta e o jogo deve começar, para já só temos um @ que anda com as teclas do numpad e as setas. 
+- 4º: Basta escrever `make` quando estiverem dentro da pasta e o jogo deve começar.
 
 ### NOTA: USEM SEMPRE "Q" PARA SAIR DO JOGO SENÃO NÃO APAGA OS FICHEIROS QUE CRIA AO CORRER O JOGO
